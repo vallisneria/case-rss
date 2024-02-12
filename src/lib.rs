@@ -32,8 +32,8 @@ async fn scourt_rss(_req: Request, _ctx: RouteContext<()>) -> WorkerResult<Respo
     };
 
     let rss_conf: RssChannelConfig = RssChannelConfig {
-        title: "대법원 판례 목록",
-        link: "https://law.yoyang.one/scourt.rss",
+        title: "대법원 판례",
+        link: "https://www.law.go.kr",
         description: "대법원 판례 목록",
         language: Some("ko-kr"),
     };
@@ -59,8 +59,8 @@ async fn court_rss(_req: Request, _ctx: RouteContext<()>) -> WorkerResult<Respon
     };
 
     let rss_conf: RssChannelConfig = RssChannelConfig {
-        title: "하급법원 판례 목록",
-        link: "https://law.yoyang.one/court.rss",
+        title: "하급법원 판례",
+        link: "https://www.law.go.kr",
         description: "하급법원 판례 목록",
         language: Some("ko-kr"),
     };
