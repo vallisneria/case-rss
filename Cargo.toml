@@ -2,8 +2,19 @@
 name = "case-rss"
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/vallisneria/case-rss"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+lto = true
+strip = true
+codegen-units = 1
+
 [dependencies]
+quick-xml = "0.31.0"
+urlencoding = "2.1.3"
 worker = "0.0.18"
