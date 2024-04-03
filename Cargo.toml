@@ -18,3 +18,6 @@ codegen-units = 1
 quick-xml = "0.31.0"
 urlencoding = "2.1.3"
 worker = "0.0.18"
+rss = "2.0.7"
+chrono = "0.4.37"
+chrono-tz = "0.8.6"

@@ -1,3 +1,5 @@
+use rss::{CategoryBuilder, ChannelBuilder, GuidBuilder, Item, ItemBuilder};
+
 pub trait Rss {
     fn get_title(&self) -> String;
     fn get_link(&self) -> String;
@@ -5,6 +7,7 @@ pub trait Rss {
     fn get_guid(&self) -> String;
     fn get_author(&self) -> String;
     fn get_category(&self) -> String;
+    fn get_pubdate(&self) -> String;
 }
 
 pub struct RssChannelConfig<'a> {
@@ -15,39 +18,34 @@ pub struct RssChannelConfig<'a> {
 }
 
 pub fn generate_rss<T: Rss>(config: &RssChannelConfig, items: &Vec<T>) -> String {
-    let mut result: String =
-        r#"<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>"#.to_string();
-
-    result =
-        format!(
-        "{result}<title>{title}</title><link>{link}</link><description>{description}</description>",
-        title = config.title, link = config.link, description = config.description
-    );
-
-    match config.language {
-        Some(lang) => result = format!("{result}<language>{}</language>", lang),
-        None => (),
-    }
+    let mut rss_items: Vec<Item> = Vec::new();
 
     for item in items {
-        result = format!(
-            "{result}
-<item>
-<title><![CDATA[{title}]]></title>
-<link>{link}</link>
-<description><![CDATA[{description}]]></description>
-<guid>{guid}</guid>
-<author>{author}</author>
-<category>{category}</category>
-</item>",
-            title = item.get_title(),
-            link = item.get_link(),
-            description = item.get_description(),
-            guid = item.get_guid(),
-            author = item.get_author(),
-            category = item.get_category()
-        );
+        let guid = GuidBuilder::default()
+            .value(item.get_guid())
+            .permalink(false)
+            .build();
+
+        let category = CategoryBuilder::default().name(item.get_category()).build();
+
+        let rss_item = ItemBuilder::default()
+            .title(item.get_title())
+            .link(item.get_link())
+            .description(item.get_description())
+            .author(item.get_author())
+            .guid(Some(guid))
+            .categories(vec![category])
+            .pub_date(item.get_pubdate())
+            .build();
+
+        rss_items.push(rss_item);
     }
 
-    format!("{}</channel>", result.replace("\n", ""))
+    ChannelBuilder::default()
+        .title(config.title)
+        .link(config.link)
+        .description(config.description)
+        .items(rss_items)
+        .build()
+        .to_string()
 }

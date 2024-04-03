@@ -1,7 +1,9 @@
 pub mod request;
 
 use crate::rss::Rss;
-use std::fmt::Display;
+use chrono::{NaiveDate, TimeZone};
+use chrono_tz::Asia::Seoul;
+use std::{fmt::Display, str::FromStr};
 
 pub enum CourtType {
     /// 대법원
@@ -161,5 +163,14 @@ impl Rss for CourtPrecedent {
 
     fn get_category(&self) -> String {
         self.case_type.as_ref().unwrap().to_string()
+    }
+
+    fn get_pubdate(&self) -> String {
+        let local_dt = NaiveDate::parse_from_str(self.decision_date.as_ref().unwrap(), "%Y.%m.%d")
+            .unwrap()
+            .and_hms_opt(14, 0, 0)
+            .unwrap();
+
+        Seoul.from_local_datetime(&local_dt).unwrap().to_rfc2822()
     }
 }
