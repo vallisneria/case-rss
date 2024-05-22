@@ -1,11 +1,14 @@
-mod law_api;
+mod court_api;
 mod rss;
 
-use law_api::request::get_court_precedent_list;
-use law_api::{CourtPrecedent, CourtType};
-use rss::RssChannelConfig;
+use crate::court_api::CourtType;
+use chrono::{NaiveDate, TimeZone};
+use chrono_tz::Asia::Seoul;
+use court_api::CourtPrecedent;
+use rss::{Rss, RssChannelConfig};
 use worker::{
-    event, Context, Env, Headers, Request, Response, Result as WorkerResult, RouteContext, Router,
+    console_log, event, Context, Env, Headers, Request, Response, Result as WorkerResult,
+    RouteContext, Router,
 };
 
 #[event(fetch)]
@@ -14,61 +17,76 @@ async fn main(_req: Request, _env: Env, _ctx: Context) -> WorkerResult<Response>
 
     router
         .get_async("/scourt.xml", scourt_rss)
-        .get_async("/court.xml", court_rss)
         .run(_req, _env)
         .await
 }
 
 async fn scourt_rss(_req: Request, _ctx: RouteContext<()>) -> WorkerResult<Response> {
-    let auth: String = _ctx.secret("AUTH").unwrap().to_string();
-    let items: Vec<CourtPrecedent> =
-        get_court_precedent_list(&auth, CourtType::SupremeCourt, 49).await;
+    let items = court_api::scourt::get_scourt_precedent_list(40)
+        .await
+        .unwrap();
 
-    let xml_header: Headers = {
-        let mut h = Headers::new();
-        h.append("Content-Type", "text/xml;charset=utf-8").unwrap();
-
-        h
-    };
-
-    let rss_conf: RssChannelConfig = RssChannelConfig {
-        title: "대법원 판례",
-        link: "https://www.law.go.kr",
-        description: "대법원 판례 목록",
+    let config = RssChannelConfig {
+        title: "대법원 판례공보",
+        link: "https://library.scourt.go.kr/search/judg/press/case",
+        description: "대법원 판례공보",
         language: Some("ko-kr"),
+        generator: Some("case-rss <https://github.com/vallisneria/case-rss>"),
     };
 
-    let body = rss::generate_rss(&rss_conf, &items);
+    let rss = rss::generate_rss(&config, &items);
 
-    Ok(Response::with_headers(
-        Response::ok(&body).unwrap(),
-        xml_header,
-    ))
+    Ok(Response::ok(rss).unwrap())
 }
 
-async fn court_rss(_req: Request, _ctx: RouteContext<()>) -> WorkerResult<Response> {
-    let auth: String = _ctx.secret("AUTH").unwrap().to_string();
-    let items: Vec<CourtPrecedent> =
-        get_court_precedent_list(&auth, CourtType::Court("".to_string()), 49).await;
+impl Rss for CourtPrecedent {
+    fn get_guid(&self) -> String {
+        format!("{}", self.id)
+    }
 
-    let xml_header: Headers = {
-        let mut h = Headers::new();
-        h.append("Content-Type", "text/xml;charset=utf-8").unwrap();
+    fn get_link(&self) -> String {
+        let kind_code = match self.court_type {
+            CourtType::SupremeCourt => 2,
+            _ => 1,
+        };
 
-        h
-    };
+        format!(
+            "https://library.scourt.go.kr/search/judg/judgDetail?seqNo={}&kindCode={kind_code}",
+            self.id
+        )
+    }
 
-    let rss_conf: RssChannelConfig = RssChannelConfig {
-        title: "하급법원 판례",
-        link: "https://www.law.go.kr",
-        description: "하급법원 판례 목록",
-        language: Some("ko-kr"),
-    };
+    fn get_title(&self) -> String {
+        format!("{} ({})", self.title, self.full_case_id())
+    }
 
-    let body = rss::generate_rss(&rss_conf, &items);
+    fn get_author(&self) -> String {
+        let judge_name: Vec<String> = self
+            .judges
+            .iter()
+            .map(|judge| judge.name.to_string())
+            .collect();
 
-    Ok(Response::with_headers(
-        Response::ok(&body).unwrap(),
-        xml_header,
-    ))
+        format!("{} ({})", self.court_type, judge_name.join(", "))
+    }
+
+    fn get_pubdate(&self) -> String {
+        let date = NaiveDate::parse_from_str(self.pub_date.as_str(), "%Y.%m.%d.")
+            .unwrap()
+            .and_hms_opt(14, 0, 0)
+            .unwrap();
+
+        Seoul.from_local_datetime(&date).unwrap().to_rfc2822()
+    }
+
+    fn get_category(&self) -> String {
+        format!("{}", self.case_type)
+    }
+
+    fn get_description(&self) -> String {
+        format!(
+            "<h2>판시사항</h2><p>{}</p><h2>판결요지</h2><p>{}</p>",
+            self.judge_abstract, self.judge_note
+        )
+    }
 }

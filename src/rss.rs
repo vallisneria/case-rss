@@ -1,4 +1,4 @@
-use rss::{CategoryBuilder, ChannelBuilder, GuidBuilder, Item, ItemBuilder};
+use rss::{CategoryBuilder, ChannelBuilder, EnclosureBuilder, GuidBuilder, Item, ItemBuilder};
 
 pub trait Rss {
     fn get_title(&self) -> String;
@@ -15,6 +15,7 @@ pub struct RssChannelConfig<'a> {
     pub link: &'a str,
     pub description: &'a str,
     pub language: Option<&'a str>,
+    pub generator: Option<&'a str>,
 }
 
 pub fn generate_rss<T: Rss>(config: &RssChannelConfig, items: &Vec<T>) -> String {
