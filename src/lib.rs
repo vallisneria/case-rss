@@ -22,7 +22,7 @@ async fn main(_req: Request, _env: Env, _ctx: Context) -> WorkerResult<Response>
 }
 
 async fn scourt_rss(_req: Request, _ctx: RouteContext<()>) -> WorkerResult<Response> {
-    let items = court_api::scourt::get_scourt_precedent_list(40)
+    let items = court_api::scourt::get_scourt_precedent_list(49)
         .await
         .unwrap();
 
