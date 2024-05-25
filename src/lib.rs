@@ -57,7 +57,14 @@ impl Rss for CourtPrecedent {
     }
 
     fn get_title(&self) -> String {
-        format!("{} ({})", self.title, self.full_case_id())
+        let title = self
+            .title
+            .replace("<", "[")
+            .replace("⟨", "[")
+            .replace(">", "]")
+            .replace("⟩", "]");
+
+        format!("{} ({})", title, self.full_case_id())
     }
 
     fn get_author(&self) -> String {
