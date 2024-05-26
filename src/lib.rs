@@ -30,8 +30,8 @@ async fn scourt_rss(_req: Request, _ctx: RouteContext<()>) -> WorkerResult<Respo
         title: "대법원 판례공보",
         link: "https://library.scourt.go.kr/search/judg/press/case",
         description: "대법원 판례공보",
-        language: Some("ko-kr"),
-        generator: Some("case-rss <https://github.com/vallisneria/case-rss>"),
+        language: "ko-KR",
+        generator: "https://github.com/vallisneria/case-rss",
     };
 
     let rss = rss::generate_rss(&config, &items);
@@ -57,12 +57,14 @@ impl Rss for CourtPrecedent {
     }
 
     fn get_title(&self) -> String {
+        // Replace parentheses to 〈 and 〉
+        // Left Angle Bracket (U+3008), Right Angle Bracket (U+3009)
         let title = self
             .title
-            .replace("<", "[")
-            .replace("⟨", "[")
-            .replace(">", "]")
-            .replace("⟩", "]");
+            .replace("<", "〈") // Less-Than Sign (U+003C)
+            .replace("⟨", "〈") // Mathematical Left Angle Bracket (U+27E8)
+            .replace(">", "〉") // Greater-Than Sign (U+003E)
+            .replace("⟩", "〉"); // Mathematical Right Angle Bracket (U+27E9)
 
         format!("{} ({})", title, self.full_case_id())
     }

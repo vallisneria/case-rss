@@ -14,8 +14,8 @@ pub struct RssChannelConfig<'a> {
     pub title: &'a str,
     pub link: &'a str,
     pub description: &'a str,
-    pub language: Option<&'a str>,
-    pub generator: Option<&'a str>,
+    pub language: &'a str,
+    pub generator: &'a str,
 }
 
 pub fn generate_rss<T: Rss>(config: &RssChannelConfig, items: &Vec<T>) -> String {
@@ -46,6 +46,8 @@ pub fn generate_rss<T: Rss>(config: &RssChannelConfig, items: &Vec<T>) -> String
         .title(config.title)
         .link(config.link)
         .description(config.description)
+        .language(config.language.to_string())
+        .generator(config.generator.to_string())
         .items(rss_items)
         .build()
         .to_string()
